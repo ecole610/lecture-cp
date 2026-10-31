@@ -49,6 +49,35 @@ h1{margin:0;font-size:clamp(22px,5vw,30px);color:var(--bleu);line-height:1.2;tex
 .revoir h3{margin:0 0 8px;font-size:20px}
 .revoir ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
 .revoir li{background:var(--ko-fond);border:2px solid var(--ko);border-radius:12px;padding:6px 12px;font-size:20px;font-weight:700;color:var(--ko)}
+
+/* Mise en page paysage compacte : tout le jeu visible sans défilement */
+@media (min-width:600px){
+  body{padding:8px;min-height:0;align-items:flex-start}
+  main{max-width:900px;gap:6px}
+  h1{font-size:clamp(18px,2.6vw,24px)}
+  .sous{font-size:15px}
+  .barre{height:10px}
+  .compteur{font-size:14px}
+  .carte{padding:12px}
+  #jeu{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr auto;column-gap:18px;row-gap:8px;align-items:center}
+  #jeu .image{grid-column:1;grid-row:1 / span 3;width:100%;aspect-ratio:288/200;border-width:6px}
+  #jeu .choix{grid-column:2;grid-row:1;gap:8px;align-self:end}
+  #jeu .retour{grid-column:2;grid-row:2;min-height:26px;font-size:clamp(16px,2.2vw,20px)}
+  #jeu .actions{grid-column:2;grid-row:3;align-self:start}
+  .mot{font-size:clamp(20px,3.2vw,28px);min-height:52px;padding:6px 12px}
+  .action{font-size:clamp(16px,2.2vw,20px);min-height:46px;padding:6px 18px}
+  .fin{gap:8px}
+  .fin h2{font-size:26px}
+  .etoiles svg{width:40px;height:40px}
+  .score{font-size:20px}
+  .revoir li{font-size:17px;padding:4px 10px}
+}
+@media (min-width:600px) and (max-height:520px){
+  h1{font-size:19px}
+  .sous{font-size:14px;line-height:1.2}
+  .carte{padding:10px}
+  #jeu .image{max-height:calc(100vh - 150px);width:auto;max-width:100%;justify-self:center}
+}
 </style>
 </head>
 <body>
