@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loto des nombres</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Mise en page : une table de jeu gris-bleu, une rangée de cartes sons (bleu nuit) au-dessus d'une rangée de cartes nombres (blanches), 5 colonnes comme les cartes de la classe. */
+:root {
+  --bg: #d3dede;
+  --surface: #e6eeee;
+  --fg: #1d2a33;
+  --muted: #4a5d66;
+  --line: #b3c3c5;
+  --card: #ffffff;
+  --card-shadow: rgba(30, 55, 62, 0.32);
+  --audio-bg: #2b2f63;
+  --audio-fg: #ffffff;
+  --accent: #0e7c86;
+  --accent-ink: #ffffff;
+  --sel: #f2a25c;
+  --good: #2e8b57;
+  --bad: #d63a35;
+  --c11: #f2bf24;
+  --c12: #9db854;
+  --c13: #0e7c86;
+  --c14: #2b2f63;
+  --c15: #7b2d8e;
+  --c16: #ee6b72;
+  --c17: #d63a35;
+  --c18: #f2a25c;
+  --c19: #f2bf24;
+  --c20: #9db854;
+  --font-display: "Outfit", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131b21;
+    --surface: #1c262d;
+    --fg: #e6eef0;
+    --muted: #9fb2b8;
+    --line: #2e3d45;
+    --card-shadow: rgba(0, 0, 0, 0.55);
+    --audio-bg: #3d4398;
+    --accent: #4fc3cc;
+    --accent-ink: #0b1519;
+    --sel: #f5b35e;
+    --good: #5cc48a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131b21;
+  --surface: #1c262d;
+  --fg: #e6eef0;
+  --muted: #9fb2b8;
+  --line: #2e3d45;
+  --card-shadow: rgba(0, 0, 0, 0.55);
+  --audio-bg: #3d4398;
+  --accent: #4fc3cc;
+  --accent-ink: #0b1519;
+  --sel: #f5b35e;
+  --good: #5cc48a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 28px; }
+.eyebrow { margin: 0; font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+h1 { margin: 2px 0 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 6vw, 3rem); line-height: 1.05; text-wrap: balance; }
+.score { min-width: 150px; }
+.score-n { font-family: var(--font-display); font-weight: 800; font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.score-n small { font-size: 1rem; color: var(--muted); font-weight: 600; }
+.bar { margin-top: 8px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--good); transition: width 0.35s ease; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 14px; background: var(--surface); border-radius: 10px; }
+.seg { display: inline-flex; border: 2px solid var(--accent); border-radius: 10px; overflow: hidden; }
+.seg button { font: inherit; font-weight: 700; padding: 9px 16px; border: 0; background: transparent; color: var(--accent); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.opt { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem; }
+.opt input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+.btn { font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 10px 18px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--fg); border: 2px solid var(--line); }
+.controls .btn { margin-left: auto; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+
+.status { min-height: 2.9em; margin: 0; font-size: clamp(1.05rem, 2.6vw, 1.3rem); font-weight: 700; display: flex; align-items: center; }
+.note { margin: 0; padding: 10px 14px; border-radius: 8px; background: var(--surface); color: var(--muted); }
+.win { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 16px 18px; border-radius: 12px; background: var(--good); color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; }
+.win .btn { background: #fff; color: #17432b; margin-left: auto; }
+html[data-theme="dark"] .win { color: #0b1f14; }
+html[data-theme="dark"] .win .btn { background: #0b1f14; color: #fff; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .win { color: #0b1f14; }
+  :root:not([data-theme="light"]) .win .btn { background: #0b1f14; color: #fff; }
+}
+
+.sec-label { margin: 0 0 10px; font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(8px, 2vw, 18px); }
+
+.card {
+  container-type: inline-size;
+  position: relative;
+  aspect-ratio: 5 / 7;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--cc);
+  box-shadow: 0 7px 14px -5px var(--card-shadow);
+  cursor: pointer;
+  font: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card:hover { transform: translateY(-3px); }
+.num { font-family: var(--font-display); font-weight: 800; font-size: 46cqw; line-height: 1; letter-spacing: -0.02em; }
+.tick { position: absolute; top: 7cqw; right: 7cqw; width: 20cqw; height: 20cqw; border-radius: 50%; background: var(--good); color: #fff; display: none; place-items: center; }
+.tick svg { width: 62%; height: 62%; }
+.numcard.done { box-shadow: 0 0 0 3px var(--cc), 0 7px 14px -5px var(--card-shadow); }
+.numcard.done .tick { display: grid; }
+
+.audio { background: var(--audio-bg); color: var(--audio-fg); }
+.audio .num { display: none; color: var(--cc); }
+.spk { width: 40cqw; height: 40cqw; }
+.idx { position: absolute; top: 7cqw; left: 7cqw; min-width: 17cqw; height: 17cqw; padding: 0 3cqw; border-radius: 9cqw; background: rgba(255, 255, 255, 0.18); font-weight: 700; font-size: 11cqw; display: grid; place-items: center; line-height: 1; }
+.word { position: absolute; left: 0; right: 0; bottom: 8cqw; text-align: center; font-weight: 700; font-size: 12cqw; display: none; }
+.help-on .audio .word { display: block; }
+.audio.sel { transform: translateY(-7px); outline: 4px solid var(--sel); outline-offset: 3px; }
+.audio.sel .spk { animation: pulse 0.9s ease-in-out infinite; }
+.audio.done { background: var(--card); color: var(--cc); box-shadow: 0 0 0 3px var(--cc), 0 7px 14px -5px var(--card-shadow); }
+.audio.done .num { display: block; }
+.audio.done .spk { position: absolute; width: 17cqw; height: 17cqw; top: 7cqw; right: 7cqw; }
+.audio.done .idx { display: none; }
+.audio.done .word { color: var(--muted); }
+
+.shake { animation: shake 0.4s ease; }
+.pop { animation: pop 0.45s ease; }
+@keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+@keyframes pop { 40% { transform: scale(1.1); } }
+@keyframes pulse { 50% { transform: scale(1.14); } }
+
+.loto { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; padding: 18px; background: var(--surface); border-radius: 12px; }
+.say { display: inline-flex; align-items: center; gap: 14px; font-family: var(--font-display); font-weight: 700; font-size: clamp(1.1rem, 3.4vw, 1.5rem); padding: 16px 26px; border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.say svg { width: 34px; height: 34px; }
+.say.pulse svg { animation: pulse 0.9s ease-in-out infinite; }
+.left { color: var(--muted); font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (max-width: 480px) {
+  .controls .btn { margin-left: 0; }
+  .score { min-width: 0; width: 100%; }
+}
+body{margin:0}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Nombres de 11 à 20</p>
+      <h1>Loto des nombres</h1>
+    </div>
+    <div class="score" aria-label="Progression">
+      <div class="score-n"><span id="count">0</span> <small>/ 10</small></div>
+      <div class="bar"><i id="barfill"></i></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Mode de jeu">
+      <button type="button" id="modeAssoc" aria-pressed="true">Associer</button>
+      <button type="button" id="modeLoto" aria-pressed="false">Loto</button>
+    </div>
+    <label class="opt" for="optShuffle"><input type="checkbox" id="optShuffle"> Mélanger les cartes nombres</label>
+    <label class="opt" for="optHelp"><input type="checkbox" id="optHelp"> Aide : nombre écrit en lettres</label>
+    <button type="button" class="btn ghost" id="again">Rejouer</button>
+  </div>
+
+  <p class="note" id="noTts" hidden>Ce navigateur ne sait pas lire les nombres à voix haute. L'aide en lettres est activée pour pouvoir jouer quand même.</p>
+
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+
+  <div class="win" id="win" hidden>
+    <span id="winText"></span>
+    <button type="button" class="btn" id="winAgain">Rejouer</button>
+  </div>
+
+  <section id="audioSec">
+    <h2 class="sec-label">Cartes sons : touche une carte pour l'écouter</h2>
+    <div class="grid" id="audioGrid"></div>
+  </section>
+
+  <section id="lotoSec" hidden>
+    <h2 class="sec-label">Le nombre à trouver</h2>
+    <div class="loto">
+      <button type="button" class="say pulse" id="say">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18.4 5.6a9 9 0 0 1 0 12.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Écouter le nombre
+      </button>
+      <span class="left" id="left"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec-label">Cartes nombres</h2>
+    <div class="grid" id="numGrid"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var NUMS = [
+    { n: 11, word: "onze" }, { n: 12, word: "douze" }, { n: 13, word: "treize" },
+    { n: 14, word: "quatorze" }, { n: 15, word: "quinze" }, { n: 16, word: "seize" },
+    { n: 17, word: "dix-sept" }, { n: 18, word: "dix-huit" }, { n: 19, word: "dix-neuf" },
+    { n: 20, word: "vingt" }
+  ];
+  var WORD = {};
+  NUMS.forEach(function (o) { WORD[o.n] = o.word; });
+  var ALL = NUMS.map(function (o) { return o.n; });
+
+  var SPK = '<svg class="spk" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18.4 5.6a9 9 0 0 1 0 12.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  var CHECK = '<span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var app = $("app"), audioGrid = $("audioGrid"), numGrid = $("numGrid"), statusEl = $("status");
+
+  var S = { mode: "assoc", found: [], sel: null, errors: 0, target: null, audioOrder: [], numOrder: [] };
+
+  /* ---------- voix ---------- */
+  var HAS_TTS = "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
+  var voices = [];
+  function loadVoices() {
+    try { voices = speechSynthesis.getVoices().filter(function (v) { return /^fr/i.test(v.lang); }); } catch (e) {}
+  }
+  if (HAS_TTS) {
+    loadVoices();
+    try { speechSynthesis.addEventListener("voiceschanged", loadVoices); } catch (e) {}
+  }
+  function pickVoice() {
+    for (var i = 0; i < voices.length; i++) { if (/fr[-_]FR/i.test(voices[i].lang)) return voices[i]; }
+    return voices[0] || null;
+  }
+  function speak(n) {
+    if (!HAS_TTS) return;
+    try {
+      speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(WORD[n]);
+      u.lang = "fr-FR";
+      u.rate = 0.8;
+      var v = pickVoice();
+      if (v) u.voice = v;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  /* ---------- petits sons de réussite / d'erreur ---------- */
+  var ac = null;
+  function tone(freqs, dur) {
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      freqs.forEach(function (f, i) {
+        var o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * dur;
+        o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t); o.stop(t + dur + 0.03);
+      });
+    } catch (e) {}
+  }
+  var good = function () { tone([660, 880], 0.13); };
+  var bad = function () { tone([240, 190], 0.16); };
+
+  /* ---------- utilitaires ---------- */
+  function shuffle(a) {
+    var b = a.slice();
+    for (var i = b.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = b[i]; b[i] = b[j]; b[j] = t;
+    }
+    return b;
+  }
+  function has(n) { return S.found.indexOf(n) !== -1; }
+  function setStatus(t) { statusEl.textContent = t; }
+  function anim(el, cls) {
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    el.addEventListener("animationend", function h() { el.classList.remove(cls); el.removeEventListener("animationend", h); });
+  }
+
+  /* ---------- construction ---------- */
+  function build() {
+    audioGrid.innerHTML = "";
+    S.audioOrder.forEach(function (n, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "card audio";
+      b.dataset.n = n;
+      b.style.setProperty("--cc", "var(--c" + n + ")");
+      b.setAttribute("aria-label", "Carte son " + (i + 1));
+      b.innerHTML = SPK + '<span class="idx">' + (i + 1) + '</span><span class="num">' + n + '</span><span class="word">' + WORD[n] + "</span>";
+      audioGrid.appendChild(b);
+    });
+    numGrid.innerHTML = "";
+    S.numOrder.forEach(function (n) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "card numcard";
+      b.dataset.n = n;
+      b.style.setProperty("--cc", "var(--c" + n + ")");
+      b.setAttribute("aria-label", "Carte " + n);
+      b.innerHTML = '<span class="num">' + n + "</span>" + CHECK;
+      numGrid.appendChild(b);
+    });
+  }
+
+  function update() {
+    Array.prototype.forEach.call(audioGrid.children, function (el) {
+      var n = +el.dataset.n;
+      el.classList.toggle("done", has(n));
+      el.classList.toggle("sel", S.sel === n);
+    });
+    Array.prototype.forEach.call(numGrid.children, function (el) {
+      el.classList.toggle("done", has(+el.dataset.n));
+    });
+    $("count").textContent = S.found.length;
+    $("barfill").style.width = (S.found.length * 10) + "%";
+    $("left").textContent = S.found.length < 10 ? "Il reste " + (10 - S.found.length) + " carte" + (10 - S.found.length > 1 ? "s" : "") + " à trouver" : "";
+    var done = S.found.length === 10;
+    $("win").hidden = !done;
+    if (done) {
+      $("winText").textContent = S.errors === 0 ? "Bravo ! Toutes les cartes trouvées, sans aucune erreur." : "Bravo ! Toutes les cartes trouvées avec " + S.errors + " erreur" + (S.errors > 1 ? "s" : "") + ".";
+    }
+  }
+
+  function applyMode() {
+    var loto = S.mode === "loto";
+    $("modeAssoc").setAttribute("aria-pressed", String(!loto));
+    $("modeLoto").setAttribute("aria-pressed", String(loto));
+    $("audioSec").hidden = loto;
+    $("lotoSec").hidden = !loto;
+  }
+
+  function pickTarget() {
+    var rest = ALL.filter(function (n) { return !has(n); });
+    if (!rest.length) { S.target = null; return; }
+    var pool = rest.length > 1 ? rest.filter(function (n) { return n !== S.target; }) : rest;
+    S.target = pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function newGame(speakFirst) {
+    S.found = []; S.sel = null; S.errors = 0; S.target = null;
+    S.audioOrder = shuffle(ALL);
+    S.numOrder = $("optShuffle").checked ? shuffle(ALL) : ALL.slice();
+    applyMode();
+    build();
+    if (S.mode === "loto") {
+      pickTarget();
+      setStatus("Appuie sur le haut-parleur, écoute bien, puis touche la carte qui correspond.");
+      if (speakFirst) speak(S.target);
+    } else {
+      setStatus("Touche une carte son pour l'écouter, puis touche la carte nombre qui correspond.");
+    }
+    update();
+  }
+
+  /* ---------- interactions ---------- */
+  audioGrid.addEventListener("click", function (e) {
+    var el = e.target.closest(".audio");
+    if (!el) return;
+    var n = +el.dataset.n;
+    speak(n);
+    if (has(n)) { setStatus("Cette carte est déjà associée au " + n + "."); return; }
+    S.sel = n;
+    setStatus("Quelle carte nombre correspond à ce son ?");
+    update();
+  });
+
+  numGrid.addEventListener("click", function (e) {
+    var el = e.target.closest(".numcard");
+    if (!el) return;
+    var n = +el.dataset.n;
+    if (has(n)) return;
+    if (S.mode === "assoc") {
+      if (S.sel === null) {
+        setStatus("Touche d'abord une carte son pour l'écouter.");
+        anim(audioGrid, "shake");
+        return;
+      }
+      if (n === S.sel) {
+        S.found.push(n); S.sel = null;
+        good(); anim(el, "pop");
+        setStatus(S.found.length === 10 ? "Toutes les paires sont trouvées !" : "Bien joué ! Choisis une autre carte son.");
+      } else {
+        S.errors++;
+        bad(); anim(el, "shake");
+        setStatus("Ce n'est pas la bonne carte. Écoute encore le son.");
+      }
+      update();
+    } else {
+      if (S.target === null) return;
+      if (n === S.target) {
+        S.found.push(n);
+        good(); anim(el, "pop");
+        if (S.found.length === 10) {
+          S.target = null;
+          setStatus("Tous les nombres sont trouvés !");
+        } else {
+          setStatus("Bravo ! Écoute le nombre suivant.");
+          pickTarget();
+          var t = S.target;
+          setTimeout(function () { if (S.target === t) speak(t); }, 900);
+        }
+      } else {
+        S.errors++;
+        bad(); anim(el, "shake");
+        setStatus("Ce n'est pas celui-là. Touche le haut-parleur pour réécouter.");
+      }
+      update();
+    }
+  });
+
+  $("say").addEventListener("click", function () {
+    if (S.target !== null) speak(S.target);
+  });
+  $("modeAssoc").addEventListener("click", function () { if (S.mode !== "assoc") { S.mode = "assoc"; newGame(false); } });
+  $("modeLoto").addEventListener("click", function () { if (S.mode !== "loto") { S.mode = "loto"; newGame(true); } });
+  $("optShuffle").addEventListener("change", function () { newGame(S.mode === "loto"); });
+  $("optHelp").addEventListener("change", function () { app.classList.toggle("help-on", $("optHelp").checked); });
+  $("again").addEventListener("click", function () { newGame(S.mode === "loto"); });
+  $("winAgain").addEventListener("click", function () { newGame(S.mode === "loto"); });
+
+  if (!HAS_TTS) {
+    $("noTts").hidden = false;
+    $("optHelp").checked = true;
+    app.classList.add("help-on");
+  }
+
+  newGame(false);
+})();
+</script>
+</body>
+</html>
